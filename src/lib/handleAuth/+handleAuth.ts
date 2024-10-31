@@ -17,14 +17,17 @@ export async function handleAuth({
   url: originURL,
 }: RequestEvent): Promise<Response> {
   const options = parseSearchParamsToObject(originURL.search);
+  console.log("Fred");
   let url: URL | null = null;
   switch (params.kindeAuth) {
     case "login":
       storePostLoginRedirectUrl(options);
-      url = await kindeAuthClient.login(
+      let kindelogin = await kindeAuthClient.login(
         request as unknown as SessionManager,
         options,
       );
+      url = kindelogin.href;
+      console.log("Login");
       break;
     case "health":
       if (!kindeConfiguration.debug) {
@@ -61,6 +64,7 @@ export async function handleAuth({
         request as unknown as SessionManager,
         options,
       );
+      console.log("Register");
       break;
     case "create_org":
       url = await kindeAuthClient.createOrg(
@@ -74,14 +78,14 @@ export async function handleAuth({
         new URL(request.url),
       );
       redirectToPostLoginUrl();
-      throw redirect(302, kindeConfiguration.loginRedirectURL ?? "/");
+      return redirect(302, kindeConfiguration.loginRedirectURL ?? "/");
     case "logout":
       url = await kindeAuthClient.logout(request as unknown as SessionManager);
       break;
     default:
       throw error(404, "Not Found");
   }
-  throw redirect(302, url.toString());
+  return redirect(302, url.toString());
 }
 
 const storePostLoginRedirectUrl = (
@@ -109,12 +113,12 @@ const redirectToPostLoginUrl = () => {
     sessionStorage.removeSessionItem(KEY_POST_LOGIN_REDIRECT_URL);
 
     if (isAbsoluteUrl(post_login_redirect_url)) {
-      throw redirect(302, new URL(post_login_redirect_url));
+      return redirect(302, new URL(post_login_redirect_url));
     } else {
-      throw redirect(
-        302,
-        new URL(post_login_redirect_url, kindeConfiguration.appBase),
-      );
+      return redirect(
+                302,
+                new URL(post_login_redirect_url, kindeConfiguration.appBase),
+              );
     }
   }
 };
